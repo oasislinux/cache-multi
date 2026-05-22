@@ -28970,6 +28970,9 @@ function warning(message, properties = {}) {
 function info(message) {
   process.stdout.write(message + os4.EOL);
 }
+function getState(name) {
+  return process.env[`STATE_${name}`] || "";
+}
 
 // node_modules/@actions/cache/lib/cache.js
 var path10 = __toESM(require("path"), 1);
@@ -63510,18 +63513,27 @@ function saveCacheV2(paths_1, key_1, options_1) {
 }
 
 // save.js
+var fs6 = __toESM(require("node:fs/promises"));
 async function run() {
   try {
+    const restored = new Set(JSON.parse(getState("restored")));
     const entries = getInput("entries", { required: true });
     for (const entry of JSON.parse(entries)) {
-      const key = await saveCache2(entry.paths, entry.key);
-      if (key)
-        info(`saved ${key}`);
+      if (restored.has(entry.key))
+        continue;
+      try {
+        await Promise.any(entry.paths.map(fs6.stat));
+      } catch (err) {
+        continue;
+      }
+      if (await saveCache2(entry.paths, entry.key))
+        info(`saved ${entry.key}`);
     }
-  } catch (error2) {
-    setFailed(error2.message);
+  } catch (err) {
+    setFailed(err.message);
   }
 }
+run();
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   run
