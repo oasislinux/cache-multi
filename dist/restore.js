@@ -28951,6 +28951,10 @@ function getInput(name, options) {
   }
   return val.trim();
 }
+function setFailed(message) {
+  process.exitCode = ExitCode.Failure;
+  error(message);
+}
 function isDebug() {
   return process.env["RUNNER_DEBUG"] === "1";
 }
@@ -62905,9 +62909,16 @@ function restoreCacheV2(paths_1, primaryKey_1, restoreKeys_1, options_1) {
 
 // restore.js
 async function run() {
-  const entries = getInput("entries", { required: true });
-  for (const entry of JSON.parse(entries))
-    restoreCache(entry.paths, entry.key);
+  try {
+    const entries = getInput("entries", { required: true });
+    for (const entry of JSON.parse(entries)) {
+      const key = await restoreCache(entry.paths, entry.key);
+      if (key)
+        info(`restored ${key}`);
+    }
+  } catch (error2) {
+    setFailed(error2.message);
+  }
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

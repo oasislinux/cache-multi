@@ -2,7 +2,14 @@ import * as core from '@actions/core';
 import * as cache from '@actions/cache';
 
 export async function run() {
-	const entries = core.getInput('entries', {required: true});
-	for (const entry of JSON.parse(entries))
-		cache.restoreCache(entry.paths, entry.key);
+	try {
+		const entries = core.getInput('entries', {required: true});
+		for (const entry of JSON.parse(entries)) {
+			const key = await cache.restoreCache(entry.paths, entry.key);
+			if (key)
+				core.info(`restored ${key}`);
+		}
+	} catch (error) {
+		core.setFailed(error.message);
+	}
 }
